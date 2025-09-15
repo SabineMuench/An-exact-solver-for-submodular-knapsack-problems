@@ -147,6 +147,34 @@ float Solver::SUB_LE(std::vector<int>& C, int capacity, const std::unordered_map
     return total_value;
 }
 
+// SUB_EP heuristic for pruning nodes
+// exact the same as SUB, only that current_gains are used instead of item.value (same as SUB_LE)
+float Solver::SUB_EP(std::vector<int>& C, int capacity, const std::unordered_map<int, float>& current_gains) {
+    // total weight of all items in C
+    int total_weight = std::accumulate(C.begin(), C.end(), 0, [this](int sum, int c) {
+        return sum + items[c].weight;
+    });
+    // pack all items in C if total weight is less/equal to capacity
+    if (total_weight <= capacity) {
+        float gesamtwert = std::accumulate(C.begin(), C.end(), 0.0f, [&](float sum, int c) {
+            return sum + current_gains.at(c)*items[c].weight;
+        });
+        return gesamtwert;
+    }
+    // pack according to steepest relativ gain if not all items can be packed
+    float total_value = 0.0f;
+    for (int c : C) {
+        const Item& item = items[c];
+        if (item.weight <= capacity) {
+            capacity -= item.weight;
+            total_value += (current_gains.at(c)*items[c].weight);
+        } else {
+            total_value += current_gains.at(c) * capacity;
+            break;
+        }
+    }
+    return total_value;
+}
 
 // SUB_LECR heuristic for pruning SUB
 // exact the same as SUB_CR, only that current_gains are used instead of item.value
@@ -230,6 +258,28 @@ std::vector<int> Solver::CR_LE(std::vector<int>& new_C, const float s_value, con
     return new_C; 
 } 
 
+// track function for EP
+// packs fractional knapsack accordingt to relative marginal gain and tracks the current gain of the last packed item
+// Input: max_heap with items ordered according to relative marginal gain, knapsack capacity anc current gains
+// Output: value of packed knapsack, current gain of item packed last into the knapsack
+template<typename HeapType>
+std::pair<float,float> Solver::track(HeapType max_heap, int capacity, const std::unordered_map<int, float>& current_gains) {
+    // pack according to steepest relativ gain and track current gain of last packed item
+    float total_value = 0.0f; // knapsack value
+    float schranke; // current gain of last packed item
+    while (items[max_heap.top()].weight<= capacity){
+        capacity -= items[max_heap.top()].weight; // update left capacity
+        total_value += (current_gains.at(max_heap.top())*items[max_heap.top()].weight); //update knapsack value
+        schranke = current_gains.at(max_heap.top()); // update current gain of last packed item
+        max_heap.pop(); // remove item from max_heap
+    }
+    if (capacity > 0){ // add fractional part of the next item if capacity is left
+        total_value += current_gains.at(max_heap.top()) * capacity; // update knapsack value
+        schranke = current_gains.at(max_heap.top()); // update current gain of last packed item
+    }
+    return {total_value, schranke};
+}
+
 // Lazy Evaluations
 std::pair<std::vector<int>, std::unordered_map<int, float>> Solver::LE(
     const std::vector<int>& S,
@@ -278,4 +328,115 @@ std::pair<std::vector<int>, std::unordered_map<int, float>> Solver::LE(
         sorted_filtered_C.push_back(ratio.first);
     }
     return {sorted_filtered_C, current_gains};
+}
+
+// Early Pruning EP
+// Input: solution set S, candidate set C, current solution value s_value, current best solution s_best, capacity, previous gains
+// Output: status Early Pruning true/false, C sorted
+std::tuple<bool, std::vector<int>, std::unordered_map<int, float>> Solver::EP(std::vector<int> S, std::vector<int> C,float s_value, float s_best,
+    int capacity, const std::unordered_map<int, float>* previous_gains
+    ) {
+    // delete all items from C that can not fit into the knapsack
+    C.erase(std::remove_if(C.begin(), C.end(), [this,capacity](int c) {
+        return items[c].weight > capacity;  
+    }), C.end());
+    // if candidate set empty return true
+    if(C.empty()){
+        return {true, {}, {}};
+    }
+    // initialize current gains
+    std::unordered_map<int, float> current_gains;
+    // if no previous gain exist, compute all relative marginal gains and check pruning conditions
+    if (previous_gains == nullptr){
+        // compute all relative marginal gains
+        for (int c : C){
+            items[c].value = z(S,c,s_value); 
+            current_gains[c] = items[c].value / items[c].weight;
+        }
+        // sort C according to relative marginal gains
+        std::sort(C.begin(), C.end(), [&current_gains](int a, int b) {
+            return current_gains[a] > current_gains[b];
+        });
+        // check pruning conditions
+        if(s_value + SUB_EP(C, capacity, current_gains) <= s_best){
+            return {true, {}, {}};
+        }
+        return {false, C, current_gains};
+    }
+    
+    int total_weight_updated = 0;  // initialize knapsack weight as zero
+    int i = 0; // initialize counter for current item
+    int last; // initialize tracker for first item not packed item
+    float schranke = std::numeric_limits<float>::infinity(); // minimum current gain of the packed items
+
+    // Max-Heap for ordering items according to relative marginal gain
+    auto cmp = [this](int a, int b) {
+        return (items[a].value / items[a].weight) < (items[b].value / items[b].weight);
+    };
+    std::priority_queue<int, std::vector<int>, decltype(cmp)> max_heap(cmp);
+
+    std::vector<int> sorted_C; // initialize empty vector for candidate set ordered according to current gains
+
+    // pack knapsack and update current gains of packed items
+    while (total_weight_updated + items[C[i]].weight < capacity and i < C.size()-1){ //
+        items[C[i]].value = z(S,C[i],s_value); 
+        current_gains[C[i]] = items[C[i]].value / items[C[i]].weight; // update current gains
+        max_heap.push(C[i]); // store items in greedy order
+        std::min(schranke, current_gains[C[i]]); // update minimum current gain of the packed items
+        i = i+1;
+        last = i;
+    }
+    // if all items were packed into the knapsack
+    if (last == C.size()){
+        while (!max_heap.empty()) {
+            sorted_C.push_back(max_heap.top()); // store greedy order in the vector sorted_C
+            max_heap.pop();
+        }
+        if(s_value + SUB_EP(sorted_C, capacity, current_gains) <= s_best){ // check pruning condition
+            return {true, {}, {}};
+        }
+        return {false, sorted_C, current_gains};
+    }
+    // initialize knapsack value for checking early (no-)pruning conditions
+    float knapsack_value; 
+    // consider all not packed items, except the last in C(S) (special case, considered later)
+    for (size_t i = last, n =C.size()-1; i < n; ++i) {
+            items[C[i]].value = z(S,C[i],s_value); 
+            current_gains[C[i]] = items[C[i]].value / items[C[i]].weight; // compute current gain
+            max_heap.push(C[i]); // insert in greedy order
+            // checking early pruning conditions
+            auto [knapsack_value, schranke] = track(max_heap,capacity,current_gains);
+            if (schranke > previous_gains->at(C[i + 1])){
+                if (s_value+knapsack_value <= s_best){ // early pruning conditions satisfied
+                    return {true, {}, {}};
+                }
+                else { // early no-pruning conditions satisfied
+                    for (size_t j = i+1, n =C.size(); j < n; ++j) { // compute current gains of all remianing items
+                        items[C[j]].value = z(S,C[j],s_value); 
+                        current_gains[C[j]] = items[C[j]].value / items[C[j]].weight;
+                        max_heap.push(C[j]); // insert into greedy order
+                    }
+                    while (!max_heap.empty()) {
+                        sorted_C.push_back(max_heap.top()); // store greedy order in vector sorted_C
+                        max_heap.pop();
+                    }
+                    return {false, sorted_C, current_gains};
+                }
+            }
+    }
+    
+    // if neither early pruning conditions nor early pruning conditions are satified before considering the last item in C(S)
+    items[C.back()].value = z(S,C.back(),s_value); 
+    current_gains[C.back()] = items[C.back()].value / items[C.back()].weight; // compute current gain of last item in C(S)
+    max_heap.push(C.back()); // insert last item into greedy order
+    while (!max_heap.empty()) {
+        sorted_C.push_back(max_heap.top()); // store greedy order in vector sorted_C
+        max_heap.pop();
+    }
+
+    if(s_value + SUB_EP(sorted_C, capacity, current_gains) <= s_best){ // check pruning conditions 
+            return {true, {}, {}};
+        }
+       
+    return {false, sorted_C, current_gains};
 }

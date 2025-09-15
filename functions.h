@@ -54,6 +54,9 @@ class Solver {
         // SUB_LE heuristic for pruning SUB
         float SUB_LE(std::vector<int>& C, int capacity, const std::unordered_map<int, float>& current_gains);
 
+        // SUB_EP heuristic for pruning SUB
+        float SUB_EP(std::vector<int>& C, int capacity, const std::unordered_map<int, float>& current_gains);
+
         // SUB_LECR heuristic for pruning SUB
         std::pair<float, std::vector<int>> SUB_LECR(const std::vector<int>& C, int capacity, const std::unordered_map<int, float>& current_gains);
 
@@ -71,6 +74,14 @@ class Solver {
             const float s_best,
             const int capacity,
             const std::unordered_map<int, float>* previous_gains = nullptr);
+
+        // track function for EP
+        template<typename HeapType>
+        std::pair<float,float> track(HeapType max_heap, int capacity, const std::unordered_map<int, float>& current_gains);
+
+        // Early Pruning EP
+        std::tuple<bool, std::vector<int>, std::unordered_map<int, float>> EP(std::vector<int> S, std::vector<int> C,float s_value, float s_best,
+        int capacity, const std::unordered_map<int, float>* previous_gains = nullptr);
 
         // default settings for solver
         Solver() = default;

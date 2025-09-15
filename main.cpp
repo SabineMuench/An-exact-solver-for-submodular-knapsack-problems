@@ -15,6 +15,7 @@ by Sabine Münch and Stephen Raach
 #include "ACRSolver.h"
 #include "LESolver.h"
 #include "LECRSolver.h"
+#include "EPSolver.h"
 
 
 
@@ -44,6 +45,10 @@ int main(int argc, char* argv[]) {
         solver = std::make_unique<LESolver>(); // Lazy Evaluations
     } 
     else if (solver_type == 3)
+    {
+        solver = std::make_unique<EPSolver>(); // Early Pruning
+    }
+    else if (solver_type == 4)
     {
         solver = std::make_unique<LECRSolver>(); // Lazy Evaluations and Candidate Reduction
     }
