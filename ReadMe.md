@@ -53,7 +53,7 @@ where $B$ is the knapsack capacity. $B$ should be an integer,
 
 $x\in \{0,1,2\}$ specifies the objective function ($0$ -> weighted coverage, $1$ -> facility location, $2$ -> bipartite inference), and
 
-$y\in \{0,1,2,3,4\}$ specifies the solver ($0$ -> basic branch-and-bound (Algorithm 1), $1$ -> Candidate Reduction (CR), $2$ -> Lazy Evaluations (LE),$3$ -> Early Pruning ,$4$ -> Lazy Evaluations and Candidate Reduction combined (LE+CR)).
+$y\in \{0,1,2,3,4,5,6,7\}$ specifies the solver ($0$ -> basic branch-and-bound (Algorithm 1), $1$ -> Candidate Reduction (CR), $2$ -> Lazy Evaluations with the average decision rule (LE<sup>a</sup>), $3$ -> Early Pruning , $4$ -> Combination of Lazy Evaluations (with the average decision rule) and Candidate Reduction (LE<sup>a</sup>+CR), $5$ -> Combination of Early Pruning and Candidate Reduction (EP+CR), $6$ -> Combination of Lazy Evaluations (with the average decision rule) and Early Pruning (LE<sup>a</sup>+EP), $7$ -> Combination of Lazy Evaluations (with the average decision rule), Early Pruning and Candidate Reduction (LE<sup>a</sup>+EP+CR), $8$ -> Lazy Evaluations with the greedy decision rule (LE<sup>g</sup>) ).
 
 ### Time Limit
 

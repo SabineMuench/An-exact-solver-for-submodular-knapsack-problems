@@ -48,25 +48,25 @@ class Solver {
         // SUB heuristic for pruning nodes
         float SUB(std::vector<int>& C, int capacity);
 
-        // SUB_CR heuritic for pruning nodes
+        // SUB_CR heuristic for pruning nodes
         std::pair<float, std::vector<int>> SUB_CR(const std::vector<int>& C, int capacity);
 
-        // SUB_LE heuristic for pruning SUB
+        // SUB_LE heuristic for pruning nodes
         float SUB_LE(std::vector<int>& C, int capacity, const std::unordered_map<int, float>& current_gains);
 
-        // SUB_EP heuristic for pruning SUB
+        // SUB_EP heuristic for pruning nodes
         float SUB_EP(std::vector<int>& C, int capacity, const std::unordered_map<int, float>& current_gains);
 
-        // SUB_LECR heuristic for pruning SUB
+        // SUB_LECR heuristic for pruning nodes
         std::pair<float, std::vector<int>> SUB_LECR(const std::vector<int>& C, int capacity, const std::unordered_map<int, float>& current_gains);
 
         // CR Candidate Reduction
         std::vector<int> CR(std::vector<int>& new_C, const float s_value, const std::vector<int>& knapsackset, const float s_best, const int capacity);
 
-        // CR_LE Candidate Reduction with Lazy Evaluations
+        // CR_LE Candidate Reduction with Lazy Evaluations with average decision rule
         std::vector<int> CR_LE(std::vector<int>& new_C, const float s_value, const std::vector<int>& knapsackset, const float s_best, const int capacity, const std::unordered_map<int, float>& current_gains);
 
-        // Lazy Evaluations
+        // Lazy Evaluations with average decision rule
         std::pair<std::vector<int>, std::unordered_map<int, float>> LE(
             const std::vector<int>& S,
             const std::vector<int>& C,
@@ -75,6 +75,9 @@ class Solver {
             const int capacity,
             const std::unordered_map<int, float>* previous_gains = nullptr);
 
+        // Early Pruning with Lazy Evaluation with average decision rule
+        std::tuple<bool, std::vector<int>, std::unordered_map<int,float>> LEEP(std::vector<int> S, std::vector<int> C,float s_value, float s_best, int capacity,const std::unordered_map<int,float>* previous_gains = nullptr);
+
         // track function for EP
         template<typename HeapType>
         std::pair<float,float> track(HeapType max_heap, int capacity, const std::unordered_map<int, float>& current_gains);
@@ -82,6 +85,25 @@ class Solver {
         // Early Pruning EP
         std::tuple<bool, std::vector<int>, std::unordered_map<int, float>> EP(std::vector<int> S, std::vector<int> C,float s_value, float s_best,
         int capacity, const std::unordered_map<int, float>* previous_gains = nullptr);
+
+        // auxiliary functions for EP+CR
+        std::vector<int> packedset(const std::vector<int>& C, int capacity);
+
+        float packedvalue(const std::vector<int>& C, int capacity, const std::unordered_map<int, float>& current_gains);
+
+        // CR for combination with EP
+        std::vector<int> CRep(std::vector<int>& new_C, const float s_value, const std::vector<int>& knapsackset, const float s_best, const int capacity, const std::unordered_map<int, float>& current_gains); 
+
+        // Lazy Evaluations with greedy decision rule
+        std::pair<std::vector<int>, std::unordered_map<int, float>> LEg(
+        const std::vector<int>& S,
+        std::vector<int> C,
+        std::vector<int> CP,
+        const float s_value,
+        const float s_best,
+        const int capacity,
+        const std::unordered_map<int, float>* previous_gains = nullptr
+        );
 
         // default settings for solver
         Solver() = default;

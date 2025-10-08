@@ -16,6 +16,10 @@ by Sabine Münch and Stephen Raach
 #include "LESolver.h"
 #include "LECRSolver.h"
 #include "EPSolver.h"
+#include "EPCRSolver.h"
+#include "LEEPSolver.h"
+#include "LEEPCRSolver.h"
+#include "LEgSolver.h"
 
 
 
@@ -42,7 +46,7 @@ int main(int argc, char* argv[]) {
     }
     else if (solver_type == 2)
     {
-        solver = std::make_unique<LESolver>(); // Lazy Evaluations
+        solver = std::make_unique<LESolver>(); // Lazy Evaluations with average decision rule
     } 
     else if (solver_type == 3)
     {
@@ -50,7 +54,23 @@ int main(int argc, char* argv[]) {
     }
     else if (solver_type == 4)
     {
-        solver = std::make_unique<LECRSolver>(); // Lazy Evaluations and Candidate Reduction
+        solver = std::make_unique<LECRSolver>(); // Lazy Evaluations with average decision rule and Candidate Reduction
+    }
+    else if (solver_type == 5)
+    {
+        solver = std::make_unique<EPCRSolver>(); // Lazy Evaluations with average decision rule and Candidate Reduction
+    }
+    else if (solver_type == 6)
+    {
+        solver = std::make_unique<LEEPSolver>(); // Lazy Evaluations with average decision rule and Candidate Reduction
+    }
+    else if (solver_type == 7)
+    {
+        solver = std::make_unique<LEEPCRSolver>(); // Lazy Evaluations with average decision rule, Early Pruning, and Candidate Reduction
+    }
+    else if (solver_type == 8)
+    {
+        solver = std::make_unique<LEgSolver>(); // Lazy Evaluations with greedy decision rule
     }
     else {
         std::cerr << "unknown solver type: " << solver_type << std::endl;

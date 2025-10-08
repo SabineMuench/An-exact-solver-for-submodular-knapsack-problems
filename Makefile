@@ -3,7 +3,7 @@ CXX = g++
 CXXFLAGS = -O2 -std=c++17
 
 # Quell-Dateien
-SRCS = main.cpp Load.cpp functions.cpp DCOSUBSolver.cpp ACRSolver.cpp LESolver.cpp LECRSolver.cpp EPSolver.cpp
+SRCS = main.cpp Load.cpp functions.cpp DCOSUBSolver.cpp ACRSolver.cpp LESolver.cpp EPSolver.cpp LECRSolver.cpp EPCRSolver.cpp LEEPSolver.cpp LEEPCRSolver.cpp LEgSolver.cpp
 
 # Das Ziel, das erstellt werden soll
 TARGET = main
